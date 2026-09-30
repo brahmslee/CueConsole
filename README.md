@@ -73,6 +73,12 @@ tests/             测试
 
 **Q台 (CueConsole)** — a timeline-based cue console for live shows. Edit cues on a visual timeline; the built-in master clock sends MTC timecode and fires cues frame-accurately (30fps ND) straight into OBS (scenes / media / text / visibility / transitions / audio / exec / random / transform), while lighting desks or DAWs chase the same timecode. Replaces the classic ASS-automation + media-player + manual-chase toolchain with one timeline. Windows + Python 3.12 + OBS with obs-websocket; double-click `setup_env.bat` then `start_bridge.bat`, open `editor/index.html`, and double-click a program card to run the show.
 
+## 联系 / Contact
+
+业务合作与部署咨询（团播直播间节目控台 / SOP 搭建）：
+
+<img src="assets/wechat_qr.png" width="160" alt="WeChat">
+
 ## License
 
 MIT
