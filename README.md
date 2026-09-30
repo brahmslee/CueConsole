@@ -4,8 +4,6 @@
 
 **Q台**（Q = cue 的圈内叫法）把直播节目的三路同步——画面、音乐、灯光——收进**一条时间轴**：编辑器里排好 cue，双击节目，主时钟到点触发，画面切镜、切片、文字与灯光走同一张时间码，帧精确（30fps 非丢帧），不翻车。
 
-替代过去的散装工具链：ASS 自动化 + P1 播放器 + 灯控台手动追。
-
 ![首页](screenshots/home.png)
 
 ## 它能干什么
@@ -71,7 +69,7 @@ tests/             测试
 
 ## English
 
-**Q台 (CueConsole)** — a timeline-based cue console for live shows. Edit cues on a visual timeline; the built-in master clock sends MTC timecode and fires cues frame-accurately (30fps ND) straight into OBS (scenes / media / text / visibility / transitions / audio / exec / random / transform), while lighting desks or DAWs chase the same timecode. Replaces the classic ASS-automation + media-player + manual-chase toolchain with one timeline. Windows + Python 3.12 + OBS with obs-websocket; double-click `setup_env.bat` then `start_bridge.bat`, open `editor/index.html`, and double-click a program card to run the show.
+**Q台 (CueConsole)** — a timeline-based cue console for live shows. Edit cues on a visual timeline; the built-in master clock sends MTC timecode and fires cues frame-accurately (30fps ND) straight into OBS (scenes / media / text / visibility / transitions / audio / exec / random / transform), while lighting desks or DAWs chase the same timecode. Windows + Python 3.12 + OBS with obs-websocket; double-click `setup_env.bat` then `start_bridge.bat`, open `editor/index.html`, and double-click a program card to run the show.
 
 ## 联系 / Contact
 
