@@ -1,0 +1,15 @@
+{
+    "name": "测试节目",
+    "fps": 30,
+    "offset": "00:00:00:00",
+    "events": [
+        { "t": "00:00:05:00", "action": "scene",      "params": { "name": "开场" } },
+        { "t": "00:00:10:00", "action": "scene",      "params": { "name": "场景1" } },
+        { "t": "00:00:10:00", "action": "media",      "params": { "source": "BGM", "cmd": "play" } },
+        { "t": "00:00:15:00", "action": "scene",      "params": { "name": "节目一-全景" } },
+        { "t": "00:00:15:00", "action": "media",      "params": { "source": "录屏", "cmd": "play" } },
+        { "t": "00:00:20:00", "action": "media",      "params": { "source": "BGM", "cmd": "stop" } },
+        { "t": "00:00:20:00", "action": "media",      "params": { "source": "录屏", "cmd": "stop" } },
+        { "t": "00:00:25:00", "action": "transition", "params": { "transition": "移动", "scene": "节目一-特写", "restore": "淡入淡出" } }
+    ]
+}

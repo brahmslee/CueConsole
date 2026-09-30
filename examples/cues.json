@@ -1,0 +1,170 @@
+{
+    "midi_port": "loopMIDI Port 1 0",
+    "obs_host": "localhost",
+    "obs_port": 4455,
+    "obs_password": "",
+    "fps": 30,
+    "cues": [
+        {
+            "tc": "00:00:02:00",
+            "action": "scene",
+            "params": {
+                "name": "节目一-全景"
+            }
+        },
+        {
+            "tc": "00:00:04:00",
+            "action": "visibility",
+            "params": {
+                "scene": "节目一-全景",
+                "source": "录屏",
+                "show": false
+            }
+        },
+        {
+            "tc": "00:00:06:00",
+            "action": "visibility",
+            "params": {
+                "scene": "节目一-全景",
+                "source": "录屏",
+                "show": true
+            }
+        },
+        {
+            "tc": "00:00:08:00",
+            "action": "transform",
+            "params": {
+                "scene": "节目一-全景",
+                "source": "录屏",
+                "scale": 0.5
+            }
+        },
+        {
+            "tc": "00:00:10:00",
+            "action": "transform",
+            "params": {
+                "scene": "节目一-全景",
+                "source": "录屏",
+                "scale": 1.0,
+                "duration_ms": 800,
+                "easing": "easeOutCubic"
+            }
+        },
+        {
+            "tc": "00:00:12:00",
+            "action": "transform",
+            "params": {
+                "scene": "节目一-全景",
+                "source": "录屏",
+                "x": 300,
+                "duration_ms": 600,
+                "easing": "easeInOutCubic"
+            }
+        },
+        {
+            "tc": "00:00:14:00",
+            "action": "transform",
+            "params": {
+                "scene": "节目一-全景",
+                "source": "录屏",
+                "x": 0,
+                "duration_ms": 600,
+                "easing": "linear"
+            }
+        },
+        {
+            "tc": "00:00:16:00",
+            "action": "transition",
+            "params": {
+                "transition": "移动",
+                "scene": "节目一-特写",
+                "restore": "淡入淡出"
+            }
+        },
+        {
+            "tc": "00:00:18:00",
+            "action": "scene",
+            "params": {
+                "name": "开场"
+            }
+        },
+        {
+            "tc": "00:00:20:00",
+            "action": "text",
+            "params": {
+                "source": "文本 (GDI+)",
+                "text": "时间线测试-改文字OK"
+            }
+        },
+        {
+            "tc": "00:00:22:00",
+            "action": "audio",
+            "params": {
+                "source": "BGM",
+                "mute": true
+            }
+        },
+        {
+            "tc": "00:00:24:00",
+            "action": "audio",
+            "params": {
+                "source": "BGM",
+                "mute": false
+            }
+        },
+        {
+            "tc": "00:00:26:00",
+            "action": "audio",
+            "params": {
+                "source": "BGM",
+                "volume": 0.5
+            }
+        },
+        {
+            "tc": "00:00:28:00",
+            "action": "exec",
+            "params": {
+                "command": "C:/Users/1/.workbuddy/binaries/python/envs/py312/Scripts/python.exe",
+                "args": [
+                    "-c",
+                    "open(r'C:/mtc-obs-bridge/_exec_test.txt','w',encoding='utf-8').write('timeline exec ok')"
+                ]
+            }
+        },
+        {
+            "tc": "00:00:30:00",
+            "action": "random",
+            "params": {
+                "scenes": [
+                    "开场",
+                    "场景1",
+                    "节目一-全景",
+                    "节目一-特写"
+                ]
+            }
+        },
+        {
+            "tc": "00:00:32:00",
+            "action": "scene",
+            "params": {
+                "name": "场景1"
+            }
+        },
+        {
+            "tc": "00:00:34:00",
+            "action": "media",
+            "params": {
+                "source": "BGM",
+                "cmd": "play"
+            }
+        },
+        {
+            "tc": "00:00:36:00",
+            "action": "media",
+            "params": {
+                "source": "BGM",
+                "cmd": "stop"
+            }
+        }
+    ]
+}

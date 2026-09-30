@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Q台 CueConsole</title>
+<style>
+  :root{
+    --bg:#1e1e1e; --panel:#2a2a2a; --panel2:#333; --btn:#3d3d3d; --line:#4a4a4a;
+    --tx:#e8e8e8; --tx2:#aaa; --tx3:#777;
+    --blue:#378add; --purple:#7f77dd; --teal:#1d9e75; --amber:#ba7517; --red:#e24b4a;
+    --accent:#378add;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:"Segoe UI","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--tx);
+    overflow:hidden; user-select:none; font-size:13px;
+  }
+  button{font-family:inherit; color:var(--tx); background:var(--btn); border:1px solid var(--line); border-radius:6px; cursor:pointer;}
+  button:hover{background:#4a4a4a;}
+  input,select{font-family:inherit; background:#222; color:var(--tx); border:1px solid var(--line); border-radius:5px; padding:4px 7px; font-size:12px;}
+  input:focus,select:focus{outline:1px solid var(--accent);}
+
+  /* ============ 初始页（窗口） ============ */
+  #home{
+    position:absolute; background:var(--panel); border:1px solid #555; border-radius:10px;
+    overflow:hidden; box-shadow:0 12px 40px rgba(0,0,0,.5);
+  }
+  #home .titlebar{
+    height:32px; background:#232323; display:flex; align-items:center; padding:0 10px; gap:8px;
+    border-bottom:1px solid #3a3a3a;
+  }
+  #home .titlebar .tc{font-family:Consolas,monospace; color:#6fd3ff; font-size:14px; letter-spacing:.5px;}
+  #home .titlebar .winbtns{margin-left:auto; display:flex; gap:6px;}
+  #home .titlebar .winbtns span{width:12px;height:12px;border-radius:50%;display:inline-block;}
+  #home .body{display:flex; height:calc(100% - 32px);}
+  #home .rail{
+    width:52px; background:#202020; border-right:1px solid #3a3a3a; display:flex;
+    flex-direction:column; align-items:center; padding-top:10px; gap:8px;
+  }
+  #home .rail button{width:40px;height:40px;font-size:13px;}
+  #home .rail .spacer{flex:1;}
+  #home .rail .led{width:10px;height:10px;border-radius:50%;margin-top:8px;}
+  #home .rail .led.g{background:#5cc95c;}
+  #home .rail .led.r{background:#e24b4a;}
+  #home .rail .ledlabel{font-size:10px;color:var(--tx3);}
+  #home .main{flex:1; display:flex; flex-direction:column; padding:12px;}
+  #home .grid{
+    flex:1; overflow:auto; display:grid; gap:10px; align-content:start;
+    grid-template-columns:repeat(auto-fill, minmax(180px,1fr));
+  }
+  #home .card{
+    background:#2f2f2f; border:1px solid #4a4a4a; border-radius:8px; padding:11px 13px;
+    cursor:pointer; position:relative;
+  }
+  #home .card:hover{border-color:#666;}
+  #home .card.sel{border-color:var(--accent); background:#2a3946;}
+  #home .card .nm{font-size:15px; font-weight:600;}
+  #home .card .meta{font-size:12px; color:var(--tx2); margin-top:6px; font-family:Consolas,monospace;}
+  #home .card .key{position:absolute; top:10px; right:12px; font-size:11px; color:var(--tx3); border:1px solid #555; border-radius:4px; padding:1px 6px;}
+  #home .footer{display:flex; gap:10px; margin-top:10px;}
+  #home .footer button{flex:1; height:38px; font-size:14px;}
+  #home .footer .play{background:#0f6e56; border-color:#0f6e56;}
+  #home .footer .play:hover{background:#159473;}
+  #home .footer .stop{background:#712b13; border-color:#712b13;}
+  #home .footer .stop:hover{background:#93391a;}
+  #home .resize{position:absolute; right:0; bottom:0; width:18px; height:18px; cursor:nwse-resize;
+    background:linear-gradient(135deg, transparent 50%, #666 50%);}
+
+  /* ============ 编辑器（全屏，四栏） ============ */
+  #editor{position:fixed; inset:0; background:var(--bg); display:none; flex-direction:column;}
+  #editor .titlebar{
+    height:40px; background:#232323; display:flex; align-items:center; padding:0 12px; gap:12px;
+    border-bottom:1px solid #3a3a3a; flex-shrink:0;
+  }
+  #editor .titlebar .tc{font-family:Consolas,monospace; color:#6fd3ff; font-size:15px;}
+  #editor .titlebar .pname{color:var(--tx2);}
+  .cols{flex:1; display:flex; min-height:0;}
+  .col{padding:12px; overflow:auto;}
+  .cap{color:var(--tx3); font-size:11px; margin-bottom:10px;}
+  .col-progs{width:170px; background:#202020; border-right:1px solid #3a3a3a;}
+  .col-progs .pbtn{display:block; width:100%; text-align:left; padding:8px 10px; margin-bottom:6px; font-size:13px;}
+  .col-progs .pbtn.on{border-color:var(--accent); background:#2a3946;}
+  .col-pset{width:220px; background:#242424; border-right:1px solid #3a3a3a;}
+  .col-pset .row{margin-bottom:12px;}
+  .col-pset .row label, .frow label{display:block; font-size:12px; color:var(--tx2); margin-bottom:4px;}
+  .col-pset .row input{width:100%;}
+  .col-acts{width:240px; background:#242424; border-right:1px solid #3a3a3a; display:flex; flex-direction:column;}
+  .col-acts .tcedit{margin-bottom:10px;}
+  .col-acts .tcedit input{width:100%; font-family:Consolas,monospace; color:#6fd3ff; font-size:13px;}
+  .actlist{flex:1; overflow:auto;}
+  .act{background:#2f2f2f; border:1px solid #4a4a4a; border-radius:6px; padding:8px 10px; margin-bottom:6px; font-size:12px; display:flex; align-items:center; gap:8px; cursor:pointer;}
+  .act:hover{border-color:#666;}
+  .act.on{border-color:var(--accent); background:#2a3946;}
+  .act .dot{width:8px;height:8px;border-radius:2px; flex-shrink:0;}
+  .act .del{margin-left:auto; color:var(--tx3); cursor:pointer; font-size:14px; padding:0 2px;}
+  .act .del:hover{color:#ff8585;}
+  .addrow{display:flex; gap:6px; margin-top:8px;}
+  .addrow select{flex:1;}
+  .addrow button{width:34px;}
+  .col-grip{width:5px; background:#262626; cursor:col-resize; flex-shrink:0; border-left:1px solid #333; border-right:1px solid #333;}
+  .col-grip:hover{background:var(--accent);}
+  .col-detail{flex:1; background:#1f1f1f; min-width:260px;}
+  .col-detail .dtitle{font-size:14px; font-weight:600; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid #3a3a3a;}
+  .col-detail .frow{margin-bottom:12px; max-width:520px;}
+  .col-detail .frow input, .col-detail .frow select{width:100%;}
+  .empty{color:var(--tx3); font-size:12px; text-align:center; margin-top:30px; line-height:1.9;}
+  .subnote{font-size:12px; color:var(--tx2); margin-bottom:12px; line-height:1.6;}
+  .subactlist{margin-bottom:10px;}
+  .subactlist .act{position:relative; margin-left:20px;}
+  .subactlist .act::before{content:attr(data-num); position:absolute; left:-20px; top:50%; transform:translateY(-50%); width:16px; text-align:right; color:var(--tx3); font-size:11px; font-family:Consolas,monospace;}
+  .act.drop-above{border-top:2px solid var(--accent);}
+  .act.drop-below{border-bottom:2px solid var(--accent);}
+  .addrow.subadd{position:sticky; top:0; z-index:5; background:#1f1f1f; padding:6px 0 10px; margin:0 0 10px;}
+  .subform{margin:2px 0 10px; padding:12px; background:#262626; border:1px solid var(--accent); border-left:3px solid var(--accent); border-radius:8px;}
+  .subform .subtitle{font-size:12px; color:var(--accent); margin-bottom:12px; font-weight:600;}
+
+  /* 时间轴区 */
+  .tl-wrap{height:300px; background:#1b1b1b; border-top:1px solid #3a3a3a; flex-shrink:0; display:flex; flex-direction:column;}
+  .tl-hint{height:24px; display:flex; align-items:center; padding:0 12px; color:var(--tx3); font-size:11px; border-bottom:1px solid #2a2a2a; gap:14px; flex-shrink:0;}
+  .tl-hint b{color:var(--tx2); font-weight:400;}
+  .timeline{flex:1; position:relative; overflow:hidden; cursor:crosshair;}
+  .timeline .midline{position:absolute; left:0; right:0; top:50%; height:2px; background:#3a3a3a; pointer-events:none;}
+  .timeline .block{position:absolute; width:14px; height:14px; top:calc(50% - 7px); margin-left:-7px; border-radius:50%; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.6); cursor:grab;}
+  .timeline .block.sel{box-shadow:0 0 0 3px rgba(255,255,255,.4), 0 1px 4px rgba(0,0,0,.6);}
+  .timeline .block .tclbl{position:absolute; bottom:15px; left:50%; transform:translateX(-50%); font-family:Consolas,monospace; font-size:10px; color:#9fd8ff; white-space:nowrap; pointer-events:none;}
+  .timeline .note{position:absolute; bottom:calc(50% + 42px); transform:translateX(-50%); background:rgba(10,10,12,.94); border:1px solid #555; border-radius:6px; padding:7px 10px; font-size:11px; min-width:130px; pointer-events:none; display:none; z-index:20; box-shadow:0 4px 14px rgba(0,0,0,.5);}
+  .timeline .note .ntc{font-family:Consolas,monospace; color:#6fd3ff; margin-bottom:5px; border-bottom:1px solid #444; padding-bottom:3px;}
+  .timeline .note .nact{display:flex; align-items:center; gap:6px; padding:1px 0; color:#ddd; white-space:nowrap;}
+  .timeline .note .dot{width:7px;height:7px;border-radius:2px;flex-shrink:0;}
+  .timeline .playhead{position:absolute; top:0; bottom:0; width:2px; background:var(--red); pointer-events:none;}
+  .timeline .playhead::after{content:""; position:absolute; top:0; left:-5px; border:5px solid transparent; border-top:8px solid var(--red);}
+  .timeline .preview{position:absolute; top:0; bottom:0; width:1px; background:rgba(255,255,255,.35); pointer-events:none; display:none;}
+  .timeline .tip{position:absolute; top:4px; transform:translateX(-50%); background:#000c; color:#6fd3ff; font-family:Consolas,monospace; font-size:11px; padding:2px 6px; border-radius:4px; pointer-events:none; display:none;}
+  .timeline .overtime{position:absolute; top:0; bottom:0; background:repeating-linear-gradient(135deg, rgba(226,75,74,.10) 0 8px, rgba(0,0,0,0) 8px 16px); pointer-events:none;}
+  .timeline .durline{position:absolute; top:0; bottom:0; width:1px; background:rgba(226,75,74,.55); pointer-events:none;}
+
+  /* 设置模态 */
+  #settings{position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:998;}
+  #settings .mbox{width:420px; background:#2a2a2a; border:1px solid #555; border-radius:10px; padding:18px;}
+  #settings h4{font-size:12px; color:var(--tx2); margin:14px 0 8px; font-weight:400;}
+  #settings .mtitle{font-size:15px; font-weight:600; display:flex; align-items:center;}
+  #settings .mtitle button{margin-left:auto; width:26px; height:26px;}
+  #settings .srow{display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:12px; color:var(--tx2);}
+  #settings .srow input, #settings .srow select{flex:1;}
+  #settings .save{width:100%; height:34px; margin-top:10px; background:#0f6e56; border-color:#0f6e56;}
+
+  /* 编译结果模态 */
+  #compileBox{position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:997;}
+  #compileBox .mbox{width:680px; max-height:82vh; display:flex; flex-direction:column; background:#2a2a2a; border:1px solid #555; border-radius:10px; padding:18px;}
+  #compileBox .mtitle{font-size:15px; font-weight:600; display:flex; align-items:center;}
+  #compileBox .mtitle button{margin-left:auto; width:26px; height:26px;}
+  #compileBox .cb-status{font-size:13px; margin:10px 0; padding:8px 12px; border-radius:6px;}
+  #compileBox .cb-status.ok{background:#0f6e56;}
+  #compileBox .cb-status.err{background:#712b13;}
+  #compileBox .cb-status.warn{background:#6b5510;}
+  #compileBox .cb-list{flex:1; overflow:auto; font-family:Consolas,monospace; font-size:12px; background:#1f1f1f; border:1px solid #3a3a3a; border-radius:6px; padding:8px 10px; margin-bottom:10px; min-height:120px;}
+  #compileBox .cb-list .cl{display:flex; gap:12px; padding:3px 0; border-bottom:1px solid #2a2a2a;}
+  #compileBox .cb-list .tc{color:#6fd3ff; flex-shrink:0; width:92px;}
+  #compileBox .cb-list .ac{color:#e8b34a; flex-shrink:0; width:78px;}
+  #compileBox .cb-list .pa{color:#aaa; word-break:break-all; flex:1;}
+  #compileBox .cb-list .errline{color:#ff8585; padding-top:8px;}
+  #compileBox .cb-list .warnline{color:#e8b34a; padding-top:8px;}
+  #compileBox .cb-json{width:100%; height:130px; background:#1f1f1f; color:#7fdd8f; border:1px solid #3a3a3a; border-radius:6px; font-family:Consolas,monospace; font-size:11px; padding:8px; resize:vertical; margin-bottom:10px; white-space:pre;}
+  #compileBox .save{width:100%; height:36px; background:#0f6e56; border-color:#0f6e56; font-size:14px;}
+
+  /* 右键菜单 */
+  #ctx{position:fixed; background:#2a2a2a; border:1px solid #555; border-radius:8px; padding:4px; display:none; z-index:999; min-width:140px;}
+  #ctx div{padding:7px 12px; font-size:13px; border-radius:5px; cursor:pointer;}
+  #ctx div:hover{background:#3d3d3d;}
+  #ctx div.danger{color:#ff8585;}
+
+  /* toast 提示 */
+  #toast{position:fixed; right:20px; bottom:20px; background:#0f6e56; border:1px solid #159473; color:#fff; border-radius:8px; padding:10px 16px; font-size:13px; display:none; z-index:1000; box-shadow:0 6px 20px rgba(0,0,0,.5);}
+  #toast.err{background:#712b13; border-color:#93391a;}
+</style>
+</head>
+<body>
+
+<!-- ============ 初始页 ============ -->
+<div id="home">
+  <div class="titlebar">
+    <span style="font-size:12px;color:#aaa;">Q台 CueConsole</span>
+    <span class="tc" id="homeTC">00:00:00:00</span>
+    <div class="winbtns"><span style="background:#ff5f56;"></span><span style="background:#ffbd2e;"></span><span style="background:#27c93f;"></span></div>
+  </div>
+  <div class="body">
+    <div class="rail">
+      <button id="btnSet" title="软件设置（连接端口等）">⚙</button>
+      <button id="btnOpen" title="开界面（进编辑器全屏）">▣</button>
+      <button id="btnAdd" title="新增节目">＋</button>
+      <div class="spacer"></div>
+      <span class="led r" id="ledMidi" title="MIDI 未连接（内置主时钟未启动）"></span>
+      <span class="ledlabel">MIDI</span>
+      <span class="led r" id="ledObs" title="OBS 未连接"></span>
+      <span class="ledlabel">OBS</span>
+    </div>
+    <div class="main">
+      <div class="grid" id="grid"></div>
+      <div class="footer">
+        <button class="play" id="btnPlay">▶ 播放</button>
+        <button class="stop" id="btnStop">■ 停止</button>
+      </div>
+    </div>
+  </div>
+  <div class="resize" id="resize"></div>
+</div>
+
+<!-- ============ 编辑器（四栏） ============ -->
+<div id="editor">
+  <div class="titlebar">
+    <button id="btnBack" style="padding:4px 12px;">← 返回</button>
+    <span class="pname" id="edPname"></span>
+    <span class="tc" id="edTC">00:00:00:00</span>
+    <button id="btnCompile" style="margin-left:auto; padding:5px 14px; background:#0f6e56; border-color:#159473;">结束编辑</button>
+  </div>
+  <div class="cols" id="cols">
+    <div class="col col-progs">
+      <div class="cap">节目</div>
+      <div id="edProgList"></div>
+      <button id="btnAddProg" style="width:100%; margin-top:6px; padding:7px 0;">＋ 新增节目</button>
+    </div>
+    <div class="col-grip" data-g="0"></div>
+    <div class="col col-pset">
+      <div class="cap">节目设置</div>
+      <div class="row"><label>名称</label><input id="fName" type="text"></div>
+      <div class="row"><label>时长（时:分:秒:帧）</label><input id="fDur" type="text" placeholder="00:00:30:00"></div>
+      <div class="row"><label>起始时间码</label><input id="fStart" type="text" placeholder="00:00:00:00"></div>
+      <div class="row"><label>快捷键</label><input id="fKey" type="text" placeholder="F2"></div>
+    </div>
+    <div class="col-grip" data-g="1"></div>
+    <div class="col col-acts">
+      <div class="cap">指令 · 动作列表</div>
+      <div id="actsBody" style="display:flex;flex-direction:column;flex:1;min-height:0;">
+        <div class="empty" style="margin-top:10px;">单击时间轴上的指令块<br>或右键空白处新增指令</div>
+      </div>
+    </div>
+    <div class="col-grip" data-g="2"></div>
+    <div class="col col-detail">
+      <div class="cap">动作参数编辑</div>
+      <div id="detailBody">
+        <div class="empty">选中左侧动作后<br>在这里编辑它的参数</div>
+      </div>
+    </div>
+  </div>
+  <div class="tl-wrap">
+    <div class="tl-hint">
+      <span><b>Ctrl</b>+滚轮 缩放</span>
+      <span><b>Alt</b>+滚轮 横移</span>
+      <span>右键空白 <b>加指令/粘贴</b></span>
+      <span>拖动 <b>移动</b></span>
+      <span>右键指令 <b>复制/删除</b></span>
+    </div>
+    <div class="timeline" id="timeline">
+      <div class="midline"></div>
+      <div class="preview" id="preview"></div>
+      <div class="tip" id="tip"></div>
+      <div class="note" id="note"></div>
+      <div class="playhead" id="playhead"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 软件设置（独立界面） ============ -->
+<div id="settings">
+  <div class="mbox">
+    <div class="mtitle">软件设置 <button id="setClose">×</button></div>
+    <h4>OBS WebSocket</h4>
+    <div class="srow">地址<input id="sObsHost" value="localhost"></div>
+    <div class="srow">端口<input id="sObsPort" value="4455"></div>
+    <div class="srow">密码<input id="sObsPass" type="password" placeholder="无密码留空"></div>
+    <h4>MIDI</h4>
+    <div class="srow">输出口<select id="sMidi"><option>loopMIDI Port 1</option><option>loopMIDI Port 2</option></select></div>
+    <div class="srow">时钟源
+      <label style="display:flex;align-items:center;gap:4px;"><input type="radio" name="clk" checked>内置（本机发 MTC）</label>
+      <label style="display:flex;align-items:center;gap:4px;"><input type="radio" name="clk">外部监听（P1 等）</label>
+    </div>
+    <button class="save" id="setSave">保存</button>
+  </div>
+</div>
+
+<!-- ============ 编译结果 ============ -->
+<div id="compileBox">
+  <div class="mbox">
+    <div class="mtitle">编译结果 <button id="cbClose">×</button></div>
+    <div class="cb-status" id="cbStatus"></div>
+    <div class="cb-list" id="cbList"></div>
+    <textarea class="cb-json" id="cbJson" readonly spellcheck="false"></textarea>
+    <button class="save" id="cbDownload">下载 cues.json</button>
+  </div>
+</div>
+
+<!-- 右键菜单 -->
+<div id="ctx"></div>
+
+<!-- toast 提示 -->
+<div id="toast"></div>
+
+<script>
+/* ============ 工具 ============ */
+const FPS = 30;
+function pad(n){return String(n).padStart(2,'0');}
+function framesToTC(f){
+  f = Math.max(0, Math.round(f));
+  const ff = f % FPS, s = Math.floor(f/FPS)%60, m = Math.floor(f/(FPS*60))%60, h = Math.floor(f/(FPS*3600));
+  return pad(h)+':'+pad(m)+':'+pad(s)+':'+pad(ff);
+}
+function tcToFrames(tc){
+  const p = tc.trim().split(':').map(Number);
+  if(p.some(isNaN)) return null;
+  while(p.length<4) p.unshift(0);
+  return ((p[0]*60+p[1])*60+p[2])*FPS + p[3];
+}
+function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+const TYPE_COLOR = {scene:'#378add', text:'#7f77dd', transform:'#ba7517', media:'#1d9e75', transition:'#5dcaa5', visibility:'#888', audio:'#5c95c9', random:'#999', queue:'#aa66cc', exec:'#666'};
+const TYPE_CN = {scene:'切场景', text:'改文字', transform:'变换', media:'媒体', transition:'转场', visibility:'显隐', audio:'音频', random:'随机', queue:'队列', exec:'程序'};
+/* OBS 资源：默认 mock 兜底（未连桥接服务仍可操作），fetchResources 连上后覆盖为真实数据 */
+const RES = {
+  scenes: ['开场','场景1','节目一-全景','节目一-特写'],
+  transitions: ['淡入淡出','移动','剪切','滑行'],
+  text: ['文本 (GDI+)'],
+  media: ['录屏','BGM'],
+  audio: ['录屏','BGM'],
+  items: ['录屏','BGM','文本 (GDI+)','颜色 2'],
+  scene_items: {
+    '开场': ['录屏','BGM','文本 (GDI+)','颜色 2'],
+    '场景1': ['录屏','BGM','文本 (GDI+)','颜色 2'],
+    '节目一-全景': ['录屏','BGM','文本 (GDI+)','颜色 2'],
+    '节目一-特写': ['录屏','BGM','文本 (GDI+)','颜色 2'],
+  },
+  current_scene: '',
+  connected: false,
+};
+const BRIDGE_URL = 'http://127.0.0.1:8765';
+
+/* 字段的选项列表：
+   optsKey → 从 RES 动态取；depends → 依赖另一个字段（如 source 依赖 scene）从 RES.scene_items[该字段值] 取；
+   prepend → 前缀选项（如"不恢复"）；否则静态 opts */
+function fieldOpts(f, params){
+  if(f.depends){
+    const key = params ? params[f.depends] : '';
+    let arr = (RES.scene_items && RES.scene_items[key]) ? RES.scene_items[key].slice() : [];
+    if(f.prepend) arr = f.prepend.concat(arr);
+    return arr;
+  }
+  if(f.optsKey){
+    let arr = (RES[f.optsKey] || []).slice();
+    if(f.prepend) arr = f.prepend.concat(arr);
+    return arr;
+  }
+  return f.opts || [];
+}
+
+function updateLeds(){
+  const led = document.getElementById('ledObs');
+  if(led){
+    led.className = 'led ' + (RES.connected ? 'g' : 'r');
+    led.title = RES.connected ? 'OBS 已连接（桥接服务正常）' : 'OBS 未连接（桥接服务未起或 OBS 未开）';
+  }
+}
+
+async function fetchResources(){
+  try{
+    const r = await fetch(BRIDGE_URL + '/api/resources', {cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    if(d.scenes) RES.scenes = d.scenes;
+    if(d.transitions) RES.transitions = d.transitions;
+    if(d.text) RES.text = d.text;
+    if(d.media) RES.media = d.media;
+    if(d.audio) RES.audio = d.audio;
+    if(d.items) RES.items = d.items;
+    if(d.scene_items) RES.scene_items = d.scene_items;
+    if(d.current_scene) RES.current_scene = d.current_scene;
+    RES.connected = true;
+  }catch(e){
+    RES.connected = false;
+  }
+  updateLeds();
+  renderGrid();
+  return RES.connected;
+}
+
+/* 动作参数 schema：字段定义驱动表单生成（optsKey=从 RES 动态取，opts=静态枚举） */
+const ACT_SCHEMA = {
+  scene: [
+    {key:'scene', label:'切换到场景', type:'select', optsKey:'scenes'},
+  ],
+  media: [
+    {key:'source', label:'媒体源', type:'select', optsKey:'media'},
+    {key:'cmd', label:'执行', type:'select', opts:['play','stop','pause','restart']},
+  ],
+  transition: [
+    {key:'transition', label:'使用转场', type:'select', optsKey:'transitions'},
+    {key:'scene', label:'切换到场景', type:'select', optsKey:'scenes'},
+    {key:'duration', label:'时长（秒）', type:'number', def:0},
+    {key:'restore', label:'切完恢复为', type:'select', optsKey:'transitions', prepend:['（不恢复）']},
+  ],
+  visibility: [
+    {key:'scene', label:'所在场景', type:'select', optsKey:'scenes'},
+    {key:'source', label:'目标源', type:'select', depends:'scene'},
+    {key:'show', label:'设为', type:'select', opts:['显示','隐藏']},
+  ],
+  text: [
+    {key:'source', label:'文本源', type:'select', optsKey:'text'},
+    {key:'text', label:'文字内容', type:'text', def:''},
+  ],
+  audio: [
+    {key:'source', label:'音频源', type:'select', optsKey:'audio'},
+    {key:'mute', label:'静音', type:'select', opts:['取消静音','静音']},
+    {key:'volume', label:'音量 0~1（与静音二选一，-1=不设）', type:'number', def:-1},
+  ],
+  transform: [
+    {key:'scene', label:'所在场景', type:'select', optsKey:'scenes'},
+    {key:'source', label:'目标源', type:'select', depends:'scene'},
+    {key:'x', label:'X 位移 (px)', type:'number', def:0},
+    {key:'y', label:'Y 位移 (px)', type:'number', def:0},
+    {key:'scale', label:'缩放 (1=原始)', type:'number', def:1},
+    {key:'duration_ms', label:'动画时长 ms（0=瞬时）', type:'number', def:0},
+    {key:'easing', label:'缓动', type:'select', opts:['linear','easeOutCubic','easeInOutCubic','easeInQuad']},
+  ],
+  random: [
+    {key:'actions', label:'候选动作', type:'actionlist', def:[]},
+  ],
+  queue: [
+    {key:'actions', label:'候选动作', type:'actionlist', def:[]},
+  ],
+  exec: [
+    {key:'command', label:'程序路径', type:'text', def:''},
+    {key:'args', label:'参数（空格分隔）', type:'text', def:''},
+  ],
+};
+function defaultAct(type){
+  const p = {};
+  (ACT_SCHEMA[type]||[]).forEach(f=>{
+    if(f.type==='actionlist') p[f.key] = [];
+    else if(f.def !== undefined) p[f.key] = f.def;
+    else if(f.type==='select') p[f.key] = fieldOpts(f, p)[0] || '';
+    else p[f.key] = '';
+  });
+  return {type, params:p};
+}
+function actText(a){
+  const p = a.params||{};
+  switch(a.type){
+    case 'scene': return '切场景 · '+(p.scene||'?');
+    case 'media': return '媒体 · '+(p.source||'?')+' '+(p.cmd||'play');
+    case 'transition': return '转场 · '+(p.transition||'?')+' → '+(p.scene||'?');
+    case 'visibility': return '显隐 · '+(p.source||'?')+' → '+(p.show||'显示');
+    case 'text': return '改文字 · '+(p.source||'?');
+    case 'audio': return (+p.volume>=0 ? ('音量 · '+(p.source||'?')+' → '+p.volume) : ((p.mute==='静音'?'静音 · ':'取消静音 · ')+(p.source||'?')));
+    case 'transform': return '变换 · '+(p.source||'?')+(+p.duration_ms>0 ? ' 动画'+p.duration_ms+'ms' : '');
+    case 'random': return '随机 · '+(p.actions?p.actions.length:0)+' 个候选动作';
+    case 'queue': return '队列 · '+(p.actions?p.actions.length:0)+' 个候选动作';
+    case 'exec': return '程序 · '+(p.command||'?');
+  }
+  return a.type;
+}
+
+/* ============ 数据 ============ */
+let programs = [
+  {name:'开场', duration:900, startTC:'00:00:00:00', hotkey:'F1', ins:[
+    {t:60, acts:[{type:'scene', params:{scene:'开场'}}]},
+    {t:150, acts:[{type:'text', params:{source:'文本 (GDI+)', text:'欢迎来到直播间'}}]},
+    {t:300, acts:[{type:'scene', params:{scene:'节目一-全景'}}]},
+  ]},
+  {name:'节目一', duration:6000, startTC:'00:00:00:00', hotkey:'F2', ins:[
+    {t:60, acts:[{type:'scene', params:{scene:'节目一-全景'}}]},
+    {t:120, acts:[{type:'visibility', params:{scene:'节目一-全景', source:'录屏', show:'隐藏'}}]},
+    {t:180, acts:[{type:'visibility', params:{scene:'节目一-全景', source:'录屏', show:'显示'}}]},
+    {t:240, acts:[{type:'transform', params:{scene:'节目一-全景', source:'录屏', x:0, y:0, scale:0.5, duration_ms:0, easing:'linear'}}]},
+    {t:300, acts:[{type:'transform', params:{scene:'节目一-全景', source:'录屏', x:0, y:0, scale:1, duration_ms:800, easing:'easeOutCubic'}}]},
+    {t:360, acts:[{type:'transition', params:{transition:'移动', scene:'节目一-特写', duration:0, restore:'淡入淡出'}}]},
+    {t:480, acts:[{type:'text', params:{source:'文本 (GDI+)', text:'节目一开始'}}]},
+    {t:540, acts:[{type:'audio', params:{source:'BGM', mute:'静音', volume:-1}}]},
+    {t:660, acts:[{type:'media', params:{source:'BGM', cmd:'play'}}]},
+  ]},
+  {name:'节目二', duration:4500, startTC:'00:03:20:00', hotkey:'F3', ins:[
+    {t:90, acts:[{type:'scene', params:{scene:'场景1'}}]},
+    {t:240, acts:[{type:'media', params:{source:'BGM', cmd:'play'}}]},
+  ]},
+];
+let curIdx = 1;
+let playing = false, playheadFrame = 0;
+let pollTimer = null;
+let selIns = -1, selAct = -1;
+let clipIns = null;   // 剪贴板（复制的指令）
+
+/* ============ 初始页 ============ */
+const home = document.getElementById('home');
+const grid = document.getElementById('grid');
+const homeTC = document.getElementById('homeTC');
+
+function fitHome(){
+  const w = Math.min(1280, innerWidth-40), h = Math.min(720, innerHeight-40);
+  home.style.width = w+'px'; home.style.height = h+'px';
+  home.style.left = ((innerWidth-w)/2)+'px'; home.style.top = ((innerHeight-h)/2)+'px';
+}
+fitHome(); addEventListener('resize', fitHome);
+
+function renderGrid(){
+  grid.innerHTML = '';
+  programs.forEach((p,i)=>{
+    const c = document.createElement('div');
+    c.className = 'card' + (i===curIdx?' sel':'');
+    c.innerHTML = '<div class="nm"></div><div class="meta"></div><div class="key"></div>';
+    c.querySelector('.nm').textContent = p.name;
+    c.querySelector('.meta').textContent = framesToTC(p.duration) + ' · ' + p.startTC;
+    c.querySelector('.key').textContent = p.hotkey;
+    c.addEventListener('click', ()=>{ curIdx=i; renderGrid(); });
+    c.addEventListener('dblclick', ()=>{ curIdx=i; renderGrid(); startPlay(); });
+    c.addEventListener('contextmenu', (e)=>{
+      e.preventDefault();
+      curIdx=i; renderGrid();
+      showCtx(e.clientX, e.clientY, [
+        {label:'编辑节目', fn:()=>{ editor.style.display='flex'; renderEditor(); }},
+        {label:'复制节目', fn:()=>{ const ni = dupProgram(i); curIdx=ni; renderGrid(); }},
+        {label:'删除节目', danger:true, fn:()=>{ programs.splice(i,1); if(curIdx>=programs.length) curIdx=programs.length-1; renderGrid(); }},
+      ]);
+    });
+    grid.appendChild(c);
+  });
+}
+renderGrid();
+fetchResources();
+
+async function startPlay(){
+  const p = getCur();
+  if(!p.ins || !p.ins.length){ toast('「'+p.name+'」没有指令，无法播放', true); return; }
+  const r = compileProgram(p);
+  if(r.errors.length){ toast('编译有 '+r.errors.length+' 处错误，无法播放', true); return; }
+  // 通知桥接服务：内置主时钟接管播放（发 MTC + 按时间码触发 cue 直驱 OBS，P1 退役）
+  try{
+    const midiPort = document.getElementById('sMidi').value;
+    await fetch(BRIDGE_URL + '/api/play', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ fps: r.fps, start_tc: p.startTC, cues: r.cues, midi_port: midiPort, duration_frames: +p.duration || 0 }),
+    });
+  }catch(e){
+    toast('桥接服务未连接，无法驱动 OBS', true);
+    return;
+  }
+  toast('已开始播放：'+r.cues.length+' 条 cue，内置主时钟发 MTC');
+  playing = true; playheadFrame = 0;
+  document.getElementById('btnPlay').textContent = '⏸ 播放中';
+  updateTCs();
+  // 播放头跟后端 current_tc 同步（不本地动画假装播）
+  startPoll();
+}
+function startPoll(){
+  stopPoll();
+  pollTimer = setInterval(pollPlayback, 100);
+}
+function stopPoll(){
+  if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+}
+async function pollPlayback(){
+  if(!playing) return;
+  try{
+    const r = await fetch(BRIDGE_URL + '/api/playback', {cache:'no-store'});
+    if(!r.ok) return;
+    const d = await r.json();
+    if(d.playing === false){ stopPlay(); return; }   // 后端已停（播完/手动停）→ 前端跟着停
+    // MIDI 灯 = 后端是否真的打开了发送口在发 MTC（不是本地播放标志的镜像）
+    document.getElementById('ledMidi').className = d.mtc_active ? 'led g' : 'led r';
+    const abs = tcToFrames(d.current_tc);
+    if(abs === null) return;
+    const base = tcToFrames(getCur().startTC) || 0;
+    playheadFrame = abs - base;
+    updateTCs();
+    if(editor.style.display === 'flex') renderTimeline();
+  }catch(e){ /* 桥断了：下轮重试，不崩 */ }
+}
+function stopPlay(){
+  stopPoll();
+  fetch(BRIDGE_URL + '/api/stop', {method:'POST'}).catch(()=>{});
+  playing = false; playheadFrame = 0;
+  document.getElementById('ledMidi').className = 'led r';   // 主时钟停 → 红
+  document.getElementById('btnPlay').textContent = '▶ 播放';
+  updateTCs();
+  if(editor.style.display==='flex') renderTimeline();
+}
+document.getElementById('btnPlay').onclick = ()=> playing ? stopPlay() : startPlay();
+document.getElementById('btnStop').onclick = stopPlay;
+function addProgram(){
+  const n = programs.length+1;
+  programs.push({name:'新节目 '+n, duration:1800, startTC:'00:00:00:00', hotkey:'F'+n, ins:[]});
+  return programs.length-1;
+}
+function dupProgram(i){
+  const c = JSON.parse(JSON.stringify(programs[i]));
+  c.name = programs[i].name + ' 副本';
+  programs.push(c);
+  return programs.length-1;
+}
+document.getElementById('btnAdd').onclick = ()=>{ curIdx = addProgram(); renderGrid(); };
+
+/* 初始页节目栏空白处右键 → 新建节目 */
+grid.addEventListener('contextmenu', e=>{
+  if(e.target.closest('.card')) return;
+  e.preventDefault();
+  showCtx(e.clientX, e.clientY, [
+    {label:'新建节目', fn:()=>{ curIdx = addProgram(); renderGrid(); }},
+  ]);
+});
+
+/* 窗口缩放（最小 560×360，照顾主持电脑紧张的空间） */
+const rz = document.getElementById('resize');
+rz.addEventListener('mousedown', e=>{
+  e.preventDefault();
+  const sx = e.clientX, sy = e.clientY, sw = home.offsetWidth, sh = home.offsetHeight;
+  function mv(ev){
+    home.style.width = Math.max(560, sw+ev.clientX-sx)+'px';
+    home.style.height = Math.max(360, sh+ev.clientY-sy)+'px';
+  }
+  function up(){ removeEventListener('mousemove',mv); removeEventListener('mouseup',up); }
+  addEventListener('mousemove',mv); addEventListener('mouseup',up);
+});
+
+/* ============ 软件设置（独立界面） ============ */
+const settings = document.getElementById('settings');
+document.getElementById('btnSet').onclick = ()=> settings.style.display='flex';
+document.getElementById('setClose').onclick = ()=> settings.style.display='none';
+document.getElementById('setSave').onclick = ()=>{ settings.style.display='none'; };
+
+/* ============ 编辑器 ============ */
+const editor = document.getElementById('editor');
+const timeline = document.getElementById('timeline');
+const playhead = document.getElementById('playhead');
+const preview = document.getElementById('preview');
+const tip = document.getElementById('tip');
+const edPname = document.getElementById('edPname');
+const edTC = document.getElementById('edTC');
+let pxPerSec = 80, offset = 0;
+const PADL = 90, PADR = 150;
+function getCur(){ return programs[curIdx]; }
+
+document.getElementById('btnOpen').onclick = ()=>{ editor.style.display='flex'; renderEditor(); };
+document.getElementById('btnBack').onclick = ()=>{ editor.style.display='none'; renderGrid(); };
+
+/* 编译（原型模拟）：编辑结束 → 时间轴编译成 cues.json */
+let toastTimer = null;
+function toast(msg, err){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = err ? 'err' : '';
+  t.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.style.display='none', 3200);
+}
+/* ============ 真编译：节目 → cues.json（对齐 mtc_to_obs.py 引擎 schema） ============ */
+const COMPILE_ENV = {
+  midi_port: 'loopMIDI Port 1',
+  obs_host: 'localhost',
+  obs_port: 4455,
+  obs_password: '',
+};
+/* UI 友好参数 → 引擎 fire_action 认的字段（关键映射，别手滑改错）：
+   scene.scene→name | visibility.show 字符串→bool | audio.mute 字符串→bool
+   random/queue.actions 递归→[{action,params}] | exec.args 空格文本→数组 | transform 只留非默认字段 */
+function normalizeParams(type, p){
+  switch(type){
+    case 'scene':      return { name: p.scene };
+    case 'media':      return { source: p.source, cmd: p.cmd };
+    case 'transition': {
+      const o = { transition: p.transition, scene: p.scene };
+      if(+p.duration > 0) o.duration = +p.duration;
+      if(p.restore && p.restore !== '（不恢复）') o.restore = p.restore;
+      return o;
+    }
+    case 'visibility': return { scene: p.scene, source: p.source, show: p.show === '显示' };
+    case 'text':       return { source: p.source, text: p.text };
+    case 'audio': {
+      const o = { source: p.source };
+      if(+p.volume >= 0) o.volume = +p.volume;
+      else o.mute = p.mute === '静音';
+      return o;
+    }
+    case 'exec': {
+      const o = { command: p.command };
+      if(p.args && p.args.trim()) o.args = p.args.trim().split(/\s+/);
+      return o;
+    }
+    case 'random':
+    case 'queue': {
+      const actions = (p.actions||[]).map(sub => ({
+        action: sub.type,
+        params: normalizeParams(sub.type, sub.params||{}),
+      }));
+      return { actions };
+    }
+    case 'transform': {
+      const o = { scene: p.scene, source: p.source };
+      if(+p.x !== 0) o.x = +p.x;
+      if(+p.y !== 0) o.y = +p.y;
+      if(+p.scale !== 1) o.scale = +p.scale;
+      if(+p.duration_ms > 0){ o.duration_ms = +p.duration_ms; if(p.easing) o.easing = p.easing; }
+      return o;
+    }
+  }
+  return Object.assign({}, p);
+}
+function compileProgram(p){
+  const offsetFrames = tcToFrames(p.startTC) || 0;
+  const cues = [], errors = [], warnings = [];
+  p.ins.slice().sort((a,b)=>a.t-b.t).forEach(ins=>{
+    const tc = framesToTC(ins.t + offsetFrames);
+    if(!ins.acts || !ins.acts.length){ warnings.push(tc+' 指令没有动作，已跳过'); return; }
+    ins.acts.forEach(act=>{
+      const params = normalizeParams(act.type, act.params||{});
+      if(act.type === 'transform'){
+        const hasField = Object.keys(params).some(k=>!['scene','source','duration_ms','easing'].includes(k));
+        if(!hasField){ errors.push(tc+' transform 缺少有效变换字段（x/y/scale 均为默认值）'); return; }
+      }
+      if((act.type === 'random' || act.type === 'queue') && (!params.actions || !params.actions.length)){
+        errors.push(tc+' '+act.type+' 缺少候选动作'); return;
+      }
+      if(act.type === 'text' && !String(params.text ?? '').trim()){
+        warnings.push(tc+' text 动作文字内容为空（若为清屏请忽略）');
+      }
+      cues.push({ tc, action: act.type, params });
+    });
+  });
+  return { fps: FPS, cues, errors, warnings };
+}
+function downloadJson(text, filename){
+  const blob = new Blob([text], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+function showCompileResult(p, r, jsonText){
+  const box = document.getElementById('compileBox');
+  const st = document.getElementById('cbStatus');
+  const list = document.getElementById('cbList');
+  document.getElementById('cbJson').value = jsonText;
+  if(r.errors.length){ st.className='cb-status err'; st.textContent = '有 '+r.errors.length+' 处错误，已跳过这些动作，共生成 '+r.cues.length+' 条 cue'; }
+  else if(r.warnings.length){ st.className='cb-status warn'; st.textContent = '编译完成：'+r.cues.length+' 条 cue（'+r.warnings.length+' 条警告）'; }
+  else { st.className='cb-status ok'; st.textContent = '编译成功：'+r.cues.length+' 条 cue'; }
+  let html = r.cues.map(c=>'<div class="cl"><span class="tc">'+esc(c.tc)+'</span><span class="ac">'+esc(c.action)+'</span><span class="pa">'+esc(JSON.stringify(c.params))+'</span></div>').join('');
+  if(r.errors.length) html += '<div class="errline">'+r.errors.map(e=>'· '+esc(e)).join('<br>')+'</div>';
+  if(r.warnings.length) html += '<div class="warnline">'+r.warnings.map(e=>'· '+esc(e)).join('<br>')+'</div>';
+  list.innerHTML = html;
+  const fn = (p.name||'program').replace(/[\\/:*?"<>|]/g,'_')+'.cues.json';
+  document.getElementById('cbDownload').onclick = ()=> downloadJson(jsonText, fn);
+  box.style.display = 'flex';
+}
+document.getElementById('cbClose').onclick = ()=>{ document.getElementById('compileBox').style.display='none'; };
+document.getElementById('btnCompile').onclick = ()=>{
+  const p = getCur();
+  if(!p.duration){ toast('「'+p.name+'」未设置时长，时间轴锁定，无法编译', true); return; }
+  if(!p.ins.length){ toast('「'+p.name+'」没有任何指令，没东西可编译', true); return; }
+  const r = compileProgram(p);
+  const obj = Object.assign({}, COMPILE_ENV, { fps: r.fps, cues: r.cues });
+  const jsonText = JSON.stringify(obj, null, 4);
+  showCompileResult(p, r, jsonText);
+  if(r.cues.length){
+    const fn = (p.name||'program').replace(/[\\/:*?"<>|]/g,'_')+'.cues.json';
+    downloadJson(jsonText, fn);
+    toast('已生成 '+fn+' 并开始下载');
+  } else {
+    toast('编译无有效 cue，未生成文件', true);
+  }
+};
+
+/* 四栏手动拖宽（拖动栏间手柄，最小 120px） */
+const gripCols = ['col-progs','col-pset','col-acts'];
+document.querySelectorAll('.col-grip').forEach(g=>{
+  g.addEventListener('mousedown', e=>{
+    e.preventDefault();
+    const col = document.querySelector('.'+gripCols[+g.dataset.g]);
+    const sw = col.offsetWidth, sx = e.clientX;
+    function mv(ev){ col.style.width = Math.max(120, sw+ev.clientX-sx)+'px'; }
+    function up(){ removeEventListener('mousemove',mv); removeEventListener('mouseup',up); }
+    addEventListener('mousemove',mv); addEventListener('mouseup',up);
+  });
+});
+
+/* 编辑器内新增节目 */
+document.getElementById('btnAddProg').onclick = ()=>{
+  curIdx = addProgram(); selIns=-1; selAct=-1;
+  renderEditor();
+};
+
+/* 编辑器节目列表栏空白处右键 → 新建节目 */
+document.querySelector('.col-progs').addEventListener('contextmenu', e=>{
+  if(e.target.closest('.pbtn') || e.target.closest('#btnAddProg')) return;
+  e.preventDefault();
+  showCtx(e.clientX, e.clientY, [
+    {label:'新建节目', fn:()=>{ curIdx = addProgram(); selIns=-1; selAct=-1; renderEditor(); }},
+  ]);
+});
+
+/* 节目设置四字段：改动落盘（此前只回显不保存，顺手补上） */
+document.getElementById('fName').addEventListener('change', e=>{
+  const v = e.target.value.trim(); if(!v){ e.target.value = getCur().name; return; }
+  getCur().name = v; edPname.textContent = v; renderEditor();
+});
+document.getElementById('fDur').addEventListener('change', e=>{
+  const f = tcToFrames(e.target.value);
+  if(f===null || f<=0){ e.target.value = framesToTC(getCur().duration); return; }
+  getCur().duration = f;
+  renderTimeline(); renderActs();
+});
+document.getElementById('fStart').addEventListener('change', e=>{
+  const f = tcToFrames(e.target.value);
+  if(f===null){ e.target.value = getCur().startTC; return; }
+  getCur().startTC = framesToTC(f); e.target.value = getCur().startTC;
+  updateTCs();
+});
+document.getElementById('fKey').addEventListener('change', e=>{
+  getCur().hotkey = e.target.value.trim(); renderGrid();
+});
+
+function renderEditor(){
+  edPname.textContent = getCur().name;
+  const lp = document.getElementById('edProgList'); lp.innerHTML='';
+  programs.forEach((p,i)=>{
+    const b = document.createElement('button');
+    b.className = 'pbtn' + (i===curIdx?' on':'');
+    b.textContent = p.name;
+    b.onclick = ()=>{ curIdx=i; selIns=-1; selAct=-1; renderEditor(); };
+    b.addEventListener('contextmenu', e=>{
+      e.preventDefault(); e.stopPropagation();
+      curIdx=i; renderEditor();
+      showCtx(e.clientX, e.clientY, [
+        {label:'复制节目', fn:()=>{ const ni = dupProgram(i); curIdx=ni; selIns=-1; selAct=-1; renderEditor(); }},
+        {label:'删除节目', danger:true, fn:()=>{ programs.splice(i,1); if(curIdx>=programs.length) curIdx=programs.length-1; selIns=-1; selAct=-1; renderEditor(); }},
+      ]);
+    });
+    lp.appendChild(b);
+  });
+  document.getElementById('fName').value = getCur().name;
+  document.getElementById('fDur').value = framesToTC(getCur().duration);
+  document.getElementById('fStart').value = getCur().startTC;
+  document.getElementById('fKey').value = getCur().hotkey;
+  selIns = -1; selAct = -1;
+  renderTimeline(); renderActs(); renderDetail();
+}
+
+/* 坐标映射 */
+function xToFrame(x){ return (x - PADL - offset) / pxPerSec * FPS; }
+function frameToX(f){ return PADL + offset + f/FPS*pxPerSec; }
+
+function renderTimeline(){
+  const dur = getCur().duration;
+  timeline.querySelectorAll('.ticks,.block,.overtime,.durline').forEach(b=>b.remove());
+  /* 超出节目时长的区域：斜纹变色 + 时长边界线（时长按帧精确计算） */
+  const durX = frameToX(dur);
+  if(durX < timeline.clientWidth){
+    const ov = document.createElement('div');
+    ov.className = 'overtime';
+    ov.style.left = Math.max(0, durX)+'px';
+    ov.style.width = (timeline.clientWidth - Math.max(0, durX))+'px';
+    timeline.appendChild(ov);
+  }
+  const dl = document.createElement('div');
+  dl.className = 'durline';
+  dl.style.left = durX+'px';
+  timeline.appendChild(dl);
+  /* 刻度画到「时长 + 30s」，让加长区也有刻度可对照 */
+  const step = pxPerSec >= 140 ? 1 : pxPerSec >= 70 ? 5 : pxPerSec >= 30 ? 10 : 30;
+  for(let s=0; s<=dur/FPS + 30; s+=step){
+    const x = frameToX(s*FPS);
+    if(x < -20 || x > timeline.clientWidth+20) continue;
+    const tick = document.createElement('div');
+    tick.className = 'ticks';
+    tick.style.cssText = 'position:absolute;left:'+x+'px;top:8px;font-size:10px;color:#777;font-family:Consolas,monospace;';
+    tick.textContent = framesToTC(s*FPS).slice(3);
+    timeline.appendChild(tick);
+  }
+  getCur().ins.forEach((ins,i)=>{
+    const x = frameToX(ins.t);
+    if(x < -90 || x > timeline.clientWidth+90) return;
+    const b = document.createElement('div');
+    b.className = 'block' + (i===selIns?' sel':'');
+    b.style.left = x+'px';
+    b.style.background = TYPE_COLOR[ins.acts[0]?.type] || '#666';
+    b.innerHTML = '<div class="tclbl">'+framesToTC(ins.t).slice(3)+'</div>';
+    b.addEventListener('mousedown', (e)=>blockDown(e,i,b));
+    b.addEventListener('mouseenter', ()=>showNote(b, ins));
+    b.addEventListener('mouseleave', hideNote);
+    b.addEventListener('contextmenu', (e)=>{
+      e.preventDefault(); e.stopPropagation();
+      selIns=i; renderTimeline(); renderActs(); renderDetail();
+      showCtx(e.clientX, e.clientY, [
+        {label:'复制', fn:()=>{ clipIns = JSON.parse(JSON.stringify(getCur().ins[i])); }},
+        {label:'删除指令', fn:()=>{ getCur().ins.splice(i,1); selIns=-1; selAct=-1; renderTimeline(); renderActs(); renderDetail(); }},
+        {label:'删除所有指令', danger:true, fn:()=>{ getCur().ins=[]; selIns=-1; selAct=-1; renderTimeline(); renderActs(); renderDetail(); }},
+      ]);
+    });
+    timeline.appendChild(b);
+  });
+  if(playing || playheadFrame>0){
+    playhead.style.display = 'block';
+    playhead.style.left = frameToX(playheadFrame)+'px';
+  } else playhead.style.display = 'none';
+}
+
+/* 指令块拖动/选中 */
+function blockDown(e, i, b){
+  e.stopPropagation();
+  const sx = e.clientX, x0 = frameToX(getCur().ins[i].t);
+  let dragged = false;
+  function mv(ev){
+    if(Math.abs(ev.clientX-sx) > 4) dragged = true;
+    if(dragged){
+      hideNote();
+      const nf = Math.max(0, Math.round(xToFrame(x0 + ev.clientX-sx)));
+      getCur().ins[i].t = nf;
+      b.style.left = frameToX(nf)+'px';
+      const lbl = b.querySelector('.tclbl'); if(lbl) lbl.textContent = framesToTC(nf).slice(3);
+    }
+  }
+  function up(){
+    removeEventListener('mousemove',mv); removeEventListener('mouseup',up);
+    if(!dragged){
+      selIns = i; selAct = ins_first(i);
+      renderTimeline(); renderActs(); renderDetail();
+    }
+  }
+  addEventListener('mousemove',mv); addEventListener('mouseup',up);
+}
+function ins_first(i){ const a = getCur().ins[i]?.acts; return a && a.length ? 0 : -1; }
+
+/* 标记点便签：悬停显示该指令包含的所有动作 */
+const note = document.getElementById('note');
+function showNote(b, ins){
+  note.innerHTML = '<div class="ntc">'+framesToTC(ins.t)+'</div>'
+    + ins.acts.map(a=>'<div class="nact"><span class="dot" style="background:'+(TYPE_COLOR[a.type]||'#666')+'"></span>'+esc(actText(a))+'</div>').join('');
+  note.style.display='block';
+  const x = parseFloat(b.style.left)||0;
+  note.style.left = Math.max(80, Math.min(x, timeline.clientWidth-90))+'px';
+}
+function hideNote(){ note.style.display='none'; }
+
+/* 时间轴空白区：预览轴 + 加指令 */
+timeline.addEventListener('mousemove', e=>{
+  const x = e.clientX - timeline.getBoundingClientRect().left;
+  preview.style.display = 'block'; preview.style.left = x+'px';
+  tip.style.display = 'block'; tip.style.left = x+'px';
+  tip.textContent = framesToTC(xToFrame(x));
+});
+timeline.addEventListener('mouseleave', ()=>{ preview.style.display='none'; tip.style.display='none'; });
+timeline.addEventListener('contextmenu', e=>{
+  if(e.target.closest('.block')) return; // 指令块有自己的菜单
+  e.preventDefault();
+  const f = Math.max(0, Math.round(xToFrame(e.clientX - timeline.getBoundingClientRect().left)));
+  showCtx(e.clientX, e.clientY, [
+    {label:'添加指令', fn:()=>{
+      const ni = {t:f, acts:[defaultAct('scene')]};
+      getCur().ins.push(ni);
+      getCur().ins.sort((a,b)=>a.t-b.t);
+      selIns = getCur().ins.indexOf(ni);
+      selAct = 0;
+      renderTimeline(); renderActs(); renderDetail();
+    }},
+    {label:'粘贴', disabled:!clipIns, fn:()=>{
+      if(!clipIns) return;
+      const c = JSON.parse(JSON.stringify(clipIns)); c.t = f;
+      getCur().ins.push(c);
+      getCur().ins.sort((a,b)=>a.t-b.t);
+      selIns = getCur().ins.indexOf(c);
+      selAct = 0;
+      renderTimeline(); renderActs(); renderDetail();
+    }},
+  ]);
+});
+timeline.addEventListener('wheel', e=>{
+  e.preventDefault();
+  const dur = getCur().duration || 1800;
+  if(e.ctrlKey){
+    /* 最小缩放 = 「节目时长 + 30s」正好铺满可视区，保证最小档永远看得到全长+30s 余量 */
+    const minPps = Math.max(4, (timeline.clientWidth - PADL - PADR) / (dur/FPS + 30));
+    pxPerSec = Math.max(minPps, Math.min(400, pxPerSec * (e.deltaY<0 ? 1.15 : 1/1.15)));
+  } else {
+    offset -= e.deltaY;
+    const maxOff = -PADL + 40;
+    const minOff = -((dur/FPS + 30)*pxPerSec + PADL + PADR - timeline.clientWidth);
+    offset = Math.max(Math.min(offset, maxOff), minOff);
+  }
+  renderTimeline();
+}, {passive:false});
+
+/* ============ 拖拽排序（动作列表/子动作列表通用） ============ */
+/* container: 列表容器；items: 底层数组；attr: 条目上的索引 data 属性名；
+   onReorder(新索引)：拖完回调（保持选中项跟手） */
+function bindDragSort(container, items, attr, onReorder){
+  if(!container) return;
+  let from = -1, to = -1, after = false;
+  const clearMark = ()=> container.querySelectorAll('.drop-above,.drop-below').forEach(x=>x.classList.remove('drop-above','drop-below'));
+  container.querySelectorAll('[data-'+attr+']').forEach(el=>{
+    el.draggable = true;
+    el.addEventListener('dragstart', e=>{
+      from = +el.dataset[attr]; to = -1;
+      e.dataTransfer.effectAllowed = 'move';
+      try{ e.dataTransfer.setData('text/plain',''); }catch(_){}
+    });
+    el.addEventListener('dragover', e=>{
+      e.preventDefault();
+      const r = el.getBoundingClientRect();
+      after = (e.clientY > r.top + r.height/2);
+      to = +el.dataset[attr];
+      clearMark();
+      el.classList.add(after?'drop-below':'drop-above');
+    });
+    el.addEventListener('dragend', clearMark);
+  });
+  container.addEventListener('drop', e=>{
+    e.preventDefault();
+    clearMark();
+    if(from>=0 && to>=0){
+      const insertAt = after ? to+1 : to;
+      if(from!==insertAt && from!==insertAt-1){
+        const item = items.splice(from,1)[0];
+        const ni = from<insertAt ? insertAt-1 : insertAt;
+        items.splice(ni, 0, item);
+        onReorder(ni);
+      }
+    }
+    from = -1; to = -1;
+  });
+}
+
+/* ============ 动作列表（第三栏） ============ */
+function renderActs(){
+  const body = document.getElementById('actsBody');
+  const cur = getCur();
+  if(selIns < 0 || !cur.ins[selIns]){
+    body.innerHTML = '<div class="empty" style="margin-top:10px;">单击时间轴上的指令块<br>或右键空白处新增指令</div>';
+    return;
+  }
+  const ins = cur.ins[selIns];
+  let html = '<div class="tcedit"><label style="font-size:11px;color:#777;">时间码（可改，回车移动指令）</label><input id="insTC" value="'+framesToTC(ins.t)+'"></div>';
+  html += '<div class="actlist" style="flex:1;overflow:auto;">';
+  ins.acts.forEach((a,ai)=>{
+    html += '<div class="act'+(ai===selAct?' on':'')+'" data-ai="'+ai+'">'
+         +  '<span class="dot" style="background:'+(TYPE_COLOR[a.type]||'#666')+'"></span>'
+         +  '<span>'+actText(a)+'</span><span class="del" data-ai="'+ai+'">×</span></div>';
+  });
+  html += '</div><div class="addrow"><select id="addType">';
+  Object.keys(TYPE_CN).forEach(t=> html += '<option value="'+t+'">'+TYPE_CN[t]+'</option>');
+  html += '</select><button id="btnAddAct">＋</button></div>';
+  body.innerHTML = html;
+
+  const insTC = document.getElementById('insTC');
+  insTC.addEventListener('change', ()=>{
+    const f = tcToFrames(insTC.value);
+    if(f === null){ insTC.value = framesToTC(ins.t); return; }
+    ins.t = Math.max(0, f);
+    getCur().ins.sort((a,b)=>a.t-b.t);
+    selIns = getCur().ins.indexOf(ins);
+    renderTimeline(); renderActs();
+  });
+  body.querySelectorAll('.act').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      if(e.target.classList.contains('del')) return;
+      selAct = +el.dataset.ai; subSel = -1;
+      renderActs(); renderDetail();
+    });
+  });
+  body.querySelectorAll('.del').forEach(d=>{
+    d.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const ai = +d.dataset.ai;
+      ins.acts.splice(ai,1);
+      if(!ins.acts.length){ getCur().ins.splice(selIns,1); selIns=-1; selAct=-1; }
+      else { if(selAct>=ins.acts.length) selAct = ins.acts.length-1; }
+      renderTimeline(); renderActs(); renderDetail();
+    });
+  });
+  document.getElementById('btnAddAct').onclick = ()=>{
+    const t = document.getElementById('addType').value;
+    /* 选中了动作 → 插到它下面；没选中 → 追加到末尾 */
+    const at = (selAct>=0 && selAct<ins.acts.length) ? selAct+1 : ins.acts.length;
+    ins.acts.splice(at, 0, defaultAct(t));
+    selAct = at;
+    renderActs(); renderDetail(); renderTimeline();
+  };
+  bindDragSort(body.querySelector('.actlist'), ins.acts, 'ai', (ni)=>{ selAct=ni; renderActs(); renderDetail(); renderTimeline(); });
+}
+
+/* ============ 动作参数编辑（第四栏大区） ============ */
+let subSel = -1; // 当前 random/queue 动作里选中的子动作索引
+function renderFieldHtml(schema, params){
+  let html = '';
+  schema.forEach(f=>{
+    const v = params[f.key] ?? '';
+    if(f.type==='select'){
+      html += '<div class="frow"><label>'+f.label+'</label><select data-k="'+f.key+'">';
+      fieldOpts(f, params).forEach(o=> html += '<option '+(String(v)===String(o)?'selected':'')+'>'+esc(o)+'</option>');
+      html += '</select></div>';
+    } else if(f.type==='number'){
+      html += '<div class="frow"><label>'+f.label+'</label><input type="number" step="any" data-k="'+f.key+'" value="'+esc(v)+'"></div>';
+    } else {
+      html += '<div class="frow"><label>'+f.label+'</label><input type="text" data-k="'+f.key+'" value="'+esc(v)+'"></div>';
+    }
+  });
+  return html;
+}
+function syncSourceForScene(params){
+  /* params 同时含 scene + source 时，确保 source 落在当前 scene 的项目列表里；
+     若不在（切了场景），重置为新场景第一个项目。返回是否发生了重置。 */
+  if(!('scene' in params) || !('source' in params)) return false;
+  const items = (RES.scene_items && RES.scene_items[params.scene]) || [];
+  if(items.length && !items.includes(params.source)){
+    params.source = items[0];
+    return true;
+  }
+  return false;
+}
+function bindFields(container, params, after){
+  container.querySelectorAll('[data-k]').forEach(el=>{
+    el.addEventListener('change', ()=>{
+      let v = el.value;
+      if(el.type==='number') v = parseFloat(v) || 0;
+      params[el.dataset.k] = v;
+      if(el.dataset.k === 'scene' && 'source' in params){
+        // 场景变化 → 目标源下拉要跟着所选场景联动刷新
+        syncSourceForScene(params);
+        renderActs(); renderTimeline();
+        renderDetail();
+        return;
+      }
+      renderActs(); renderTimeline();
+      if(after) after();
+    });
+  });
+}
+function renderDetail(){
+  const d = document.getElementById('detailBody');
+  const cur = getCur();
+  if(selIns < 0 || !cur.ins[selIns]){
+    d.innerHTML = '<div class="empty">选中时间轴上的指令后<br>在这里编辑动作参数</div>';
+    return;
+  }
+  const ins = cur.ins[selIns];
+  if(selAct < 0 || !ins.acts[selAct]){
+    d.innerHTML = '<div class="empty">在左侧动作列表中选择一个动作</div>';
+    return;
+  }
+  const act = ins.acts[selAct];
+  if(act.type === 'random' || act.type === 'queue'){
+    renderNestedDetail(d, act);
+    return;
+  }
+  subSel = -1;
+  const schema = ACT_SCHEMA[act.type] || [];
+  d.innerHTML = '<div class="dtitle">'+TYPE_CN[act.type]+'</div>' + renderFieldHtml(schema, act.params||{});
+  bindFields(d, act.params||{});
+}
+function renderNestedDetail(d, act){
+  const list = act.params.actions || (act.params.actions = []);
+  let html = '<div class="dtitle">'+TYPE_CN[act.type]+'</div>';
+  html += '<div class="subnote">'+(act.type==='random'
+    ? '每次触发：随机执行下面其中一个子动作'
+    : '每次触发：按顺序轮转执行一个子动作（每遍运行取下一个，循环）')+'</div>';
+  html += '<div class="addrow subadd"><select id="subType">';
+  Object.keys(TYPE_CN).filter(t=>t!=='random' && t!=='queue').forEach(t=> html += '<option value="'+t+'">'+TYPE_CN[t]+'</option>');
+  html += '</select><button id="btnAddSub" style="width:auto;padding:0 10px;">＋ 添加</button></div>';
+  html += '<div class="subactlist">';
+  list.forEach((sa, si)=>{
+    html += '<div class="act'+(si===subSel?' on':'')+'" data-si="'+si+'" data-num="'+(si+1)+'">'
+         +  '<span class="dot" style="background:'+(TYPE_COLOR[sa.type]||'#666')+'"></span>'
+         +  '<span>'+actText(sa)+'</span><span class="del" data-si="'+si+'">×</span></div>';
+    if(si === subSel){
+      html += '<div class="subform"><div class="subtitle">编辑子动作：'+TYPE_CN[sa.type]+'</div>';
+      html += renderFieldHtml(ACT_SCHEMA[sa.type]||[], sa.params||{});
+      html += '</div>';
+    }
+  });
+  html += '</div>';
+  if(!list.length) html += '<div class="empty" style="margin-top:6px;">还没有子动作，从上方添加</div>';
+  d.innerHTML = html;
+
+  d.querySelectorAll('.subactlist .act').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      if(e.target.classList.contains('del')) return;
+      subSel = +el.dataset.si;
+      renderDetail();
+    });
+  });
+  d.querySelectorAll('.subactlist .del').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      list.splice(+el.dataset.si, 1);
+      if(subSel >= list.length) subSel = list.length-1;
+      renderDetail(); renderActs();
+    });
+  });
+  document.getElementById('btnAddSub').onclick = ()=>{
+    const t = document.getElementById('subType').value;
+    /* 选中了子动作 → 插到它下面；没选中 → 追加到末尾 */
+    const at = (subSel>=0 && subSel<list.length) ? subSel+1 : list.length;
+    list.splice(at, 0, defaultAct(t));
+    subSel = at;
+    renderDetail(); renderActs();
+  };
+  bindDragSort(d.querySelector('.subactlist'), list, 'si', (ni)=>{ subSel=ni; renderDetail(); renderActs(); });
+  if(subSel>=0 && list[subSel]){
+    const sa = list[subSel];
+    bindFields(d.querySelector('.subform'), sa.params||{}, renderDetail);
+  }
+}
+
+/* ============ 右键菜单 ============ */
+const ctx = document.getElementById('ctx');
+function showCtx(x,y,items){
+  ctx.innerHTML = '';
+  items.forEach(it=>{
+    const d = document.createElement('div');
+    d.textContent = it.label;
+    if(it.danger) d.className = 'danger';
+    if(it.disabled) d.style.cssText = 'opacity:.4;cursor:default;';
+    d.onclick = (e)=>{ e.stopPropagation(); if(it.disabled) return; it.fn(); ctx.style.display='none'; };
+    ctx.appendChild(d);
+  });
+  ctx.style.display = 'block'; ctx.style.left = x+'px'; ctx.style.top = y+'px';
+}
+addEventListener('click', ()=> ctx.style.display='none');
+
+/* ============ 播放循环 ============ */
+function updateTCs(){
+  const base = tcToFrames(getCur().startTC) || 0;   // 绝对时间码 = 节目起始TC + 播放头相对时间
+  const tc = framesToTC(base + Math.round(playheadFrame));
+  homeTC.textContent = tc; edTC.textContent = tc;
+}
+</script>
+</body>
+</html>

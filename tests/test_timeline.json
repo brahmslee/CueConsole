@@ -1,0 +1,25 @@
+{
+    "name": "全动作测试",
+    "fps": 30,
+    "offset": "00:00:00:00",
+    "events": [
+        { "t": "00:00:02:00", "action": "scene",      "params": { "name": "节目一-全景" } },
+        { "t": "00:00:04:00", "action": "visibility", "params": { "scene": "节目一-全景", "source": "录屏", "show": false } },
+        { "t": "00:00:06:00", "action": "visibility", "params": { "scene": "节目一-全景", "source": "录屏", "show": true } },
+        { "t": "00:00:08:00", "action": "transform",  "params": { "scene": "节目一-全景", "source": "录屏", "scale": 0.5 } },
+        { "t": "00:00:10:00", "action": "transform",  "params": { "scene": "节目一-全景", "source": "录屏", "scale": 1.0, "duration_ms": 800, "easing": "easeOutCubic" } },
+        { "t": "00:00:12:00", "action": "transform",  "params": { "scene": "节目一-全景", "source": "录屏", "x": 300, "duration_ms": 600, "easing": "easeInOutCubic" } },
+        { "t": "00:00:14:00", "action": "transform",  "params": { "scene": "节目一-全景", "source": "录屏", "x": 0, "duration_ms": 600, "easing": "linear" } },
+        { "t": "00:00:16:00", "action": "transition", "params": { "transition": "移动", "scene": "节目一-特写", "restore": "淡入淡出" } },
+        { "t": "00:00:18:00", "action": "scene",      "params": { "name": "开场" } },
+        { "t": "00:00:20:00", "action": "text",       "params": { "source": "文本 (GDI+)", "text": "时间线测试-改文字OK" } },
+        { "t": "00:00:22:00", "action": "audio",      "params": { "source": "BGM", "mute": true } },
+        { "t": "00:00:24:00", "action": "audio",      "params": { "source": "BGM", "mute": false } },
+        { "t": "00:00:26:00", "action": "audio",      "params": { "source": "BGM", "volume": 0.5 } },
+        { "t": "00:00:28:00", "action": "exec",       "params": { "command": "C:/Users/1/.workbuddy/binaries/python/envs/py312/Scripts/python.exe", "args": ["-c", "open(r'C:/mtc-obs-bridge/_exec_test.txt','w',encoding='utf-8').write('timeline exec ok')"] } },
+        { "t": "00:00:30:00", "action": "random",     "params": { "scenes": ["开场", "场景1", "节目一-全景", "节目一-特写"] } },
+        { "t": "00:00:32:00", "action": "scene",      "params": { "name": "场景1" } },
+        { "t": "00:00:34:00", "action": "media",      "params": { "source": "BGM", "cmd": "play" } },
+        { "t": "00:00:36:00", "action": "media",      "params": { "source": "BGM", "cmd": "stop" } }
+    ]
+}
