@@ -32,8 +32,6 @@ cues.json       执行层：{tc, action, params}
    → mtc_to_obs.py / bridge_server.py  到点直驱 OBS + 发 MTC
 ```
 
-时间轴是**纯内容资产**，与设备解耦——同一份 timeline 可以卖给任何直播间重新排期使用。
-
 ## 环境要求
 
 - Windows
